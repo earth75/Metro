@@ -386,7 +386,7 @@ void loop() {
   byte arrival = getStation("Arriv.");
   char a_lines[5] = { -1, -1, -1, -1, -1 };
   findLines(a_lines, arrival);
-  
+
   /* Check if both stations are on the same line. */
   char buf = sameLine(d_lines, a_lines);
   if (buf != -1) {
@@ -402,8 +402,7 @@ void loop() {
     /* Check if there's one change. */
     char ret[20][2] = { {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1} };
     oneChange(ret, d_lines, a_lines);
-    byte temps[20][2] = {{0, 0}}; // TODO: check if this function is correctly initialized
-    
+
     if (ret[0][0] != -1) { // w/a to pass else
       byte d_station;
       byte changement0;
@@ -411,6 +410,8 @@ void loop() {
       byte c0_station_a;
       byte a_station;
       byte compteur1 = 0, compteur2 = 0;
+      byte temps[20][2] = {{0, 0}}; // TODO: check if this function is correctly initialized
+
       for (int r=0; r<20; r++) {
         /* On compte en partant du départ et en allant à l'arrivée. */
         if (ret[r][0] != -1) {
@@ -497,11 +498,12 @@ void loop() {
       turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret[tmp][1]][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret[tmp][1]][i]))].led)));
     } else {
       /* Check if there's two changes. */
-      char ret2[50][3] = { {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1},{-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}, {-1,-1,-1}  };
-      twoChanges(ret, d_lines, a_lines);
+      // initialize the array to -2 instead of -1 (avr bootloader interprets lots of -1 in memory as corrupt)
+      char ret2[50][3] = { {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2} };
+      twoChanges(ret2, d_lines, a_lines);
       byte temps[50][3] = {{0, 0, 0}};
     
-      if (ret2[0][0] != -1) { // w/a to pass else
+      if (ret2[0][0] != -2) { // w/a to pass else
         byte d_station;
         byte changement0;
         byte c0_station_d;
@@ -513,86 +515,86 @@ void loop() {
         byte compteur1 = 0, compteur2 = 0, compteur3 = 0;
         for (int r=0; r<50; r++) {
           /* On compte en partant du départ et en allant à l'arrivée en passant par la ligne intermédiaire. */
-          if (ret[r][0] != -1) {
-            d_station = rangStation(ret[r][0], departure); // D. to
-            a_station = rangStation(ret[r][2], arrival);   // A.
+          if (ret2[r][0] != -2) {
+            d_station = rangStation(ret2[r][0], departure); // D. to
+            a_station = rangStation(ret2[r][2], arrival);   // A.
             for (int i=1; i<NombreStationsParLigne; i++) {
               if ((d_station-i) >= 0) {
-                if (crossesLine(ret[r][1],pgm_read_byte(&(ligne[ret[r][0]][d_station-i])))) {
+                if (crossesLine(ret2[r][1],pgm_read_byte(&(ligne[ret2[r][0]][d_station-i])))) {
                   c0_station_d = d_station - i;
                   compteur1 = i + TempsChangement; // On compte le temps du départ au changement0
                   break;
                 }
               }
-              if ((d_station+i) < NombreStationsParLigne && pgm_read_byte(&(ligne[ret[r][0]][d_station+i])) != (byte)-1) {
-                if (crossesLine(ret[r][1],pgm_read_byte(&(ligne[ret[r][0]][d_station+i])))) {
+              if ((d_station+i) < NombreStationsParLigne && pgm_read_byte(&(ligne[ret2[r][0]][d_station+i])) != (byte)-1) {
+                if (crossesLine(ret2[r][1],pgm_read_byte(&(ligne[ret2[r][0]][d_station+i])))) {
                   c0_station_d = d_station + i;
                   compteur1 = i + TempsChangement; // idem
                   break;
                 }
               }
             }
-            changement0 = pgm_read_byte(&(ligne[ret[r][0]][c0_station_d]));
-            c0_station_a = rangStation(ret[r][1], changement0);
+            changement0 = pgm_read_byte(&(ligne[ret2[r][0]][c0_station_d]));
+            c0_station_a = rangStation(ret2[r][1], changement0);
 
             d_station = c0_station_a;
             for (int i=1; i<NombreStationsParLigne; i++) {
               if ((d_station-i) >= 0) {
-                if (crossesLine(ret[r][2],pgm_read_byte(&(ligne[ret[r][1]][d_station-i])))) {
+                if (crossesLine(ret2[r][2],pgm_read_byte(&(ligne[ret2[r][1]][d_station-i])))) {
                   c1_station_d = d_station - i;
                   compteur1 = i + TempsChangement; // On compte le temps du changement0 au changement1
                   break;
                 }
               }
-              if ((d_station+i) < NombreStationsParLigne && pgm_read_byte(&(ligne[ret[r][1]][d_station+i])) != (byte)-1) {
-                if (crossesLine(ret[r][2],pgm_read_byte(&(ligne[ret[r][1]][d_station+i])))) {
+              if ((d_station+i) < NombreStationsParLigne && pgm_read_byte(&(ligne[ret2[r][1]][d_station+i])) != (byte)-1) {
+                if (crossesLine(ret2[r][2],pgm_read_byte(&(ligne[ret2[r][1]][d_station+i])))) {
                   c1_station_d = d_station + i;
                   compteur1 = i + TempsChangement; // idem
                   break;
                 }
               }
             }
-            changement1 = pgm_read_byte(&(ligne[ret[r][1]][c1_station_d]));
-            c1_station_a = rangStation(ret[r][2], changement1);
+            changement1 = pgm_read_byte(&(ligne[ret2[r][1]][c1_station_d]));
+            c1_station_a = rangStation(ret2[r][2], changement1);
             compteur1 += abs(c1_station_a - a_station); // on compte le temps du changement1 à l'arrivée
           }
           temps[r][1] = changement0;
           temps[r][2] = changement1;
 
           /* On compte en sens inverse. Le chemin le plus court est dans l'un des deux trajets. */
-          if (ret[r][0] != -1) {
-            a_station = rangStation(ret[r][0], departure); // A. to
-            d_station = rangStation(ret[r][2], arrival);   // D.
+          if (ret2[r][0] != -2) {
+            a_station = rangStation(ret2[r][0], departure); // A. to
+            d_station = rangStation(ret2[r][2], arrival);   // D.
             for (int i=1; i<NombreStationsParLigne; i++) {
               if ((d_station-i) >= 0) {
-                if (crossesLine(ret[r][1],pgm_read_byte(&(ligne[ret[r][2]][d_station-i])))) {
+                if (crossesLine(ret2[r][1],pgm_read_byte(&(ligne[ret2[r][2]][d_station-i])))) {
                   c1_station_d = d_station - i;
                   compteur2 = i + TempsChangement; // On compte le temps du changement0 au changement1
                   break;
                 }
               }
-              if ((d_station+i) < NombreStationsParLigne && pgm_read_byte(&(ligne[ret[r][2]][d_station+i])) != (byte)-1) {
-                if (crossesLine(ret[r][1],pgm_read_byte(&(ligne[ret[r][2]][d_station+i])))) {
+              if ((d_station+i) < NombreStationsParLigne && pgm_read_byte(&(ligne[ret2[r][2]][d_station+i])) != (byte)-1) {
+                if (crossesLine(ret2[r][1],pgm_read_byte(&(ligne[ret2[r][2]][d_station+i])))) {
                   c1_station_d = d_station + i;
                   compteur2 = i + TempsChangement; // idem
                   break;
                 }
               }
             }
-            changement1 = pgm_read_byte(&(ligne[ret[r][2]][c1_station_d]));
-            c1_station_a = rangStation(ret[r][1], changement1);
+            changement1 = pgm_read_byte(&(ligne[ret2[r][2]][c1_station_d]));
+            c1_station_a = rangStation(ret2[r][1], changement1);
 
             d_station = c1_station_a;
             for (int i=1; i<NombreStationsParLigne; i++) {
               if ((d_station-i) >= 0) {
-                if (crossesLine(ret[r][0],pgm_read_byte(&(ligne[ret[r][1]][d_station-i])))) {
+                if (crossesLine(ret2[r][0],pgm_read_byte(&(ligne[ret2[r][1]][d_station-i])))) {
                   c0_station_d = d_station - i;
                   compteur2 = i + TempsChangement; // On compte le temps du départ au changement0
                   break;
                 }
               }
-              if ((d_station+i) < NombreStationsParLigne && pgm_read_byte(&(ligne[ret[r][1]][d_station+i])) != (byte)-1) {
-                if (crossesLine(ret[r][0],pgm_read_byte(&(ligne[ret[r][1]][d_station+i])))) {
+              if ((d_station+i) < NombreStationsParLigne && pgm_read_byte(&(ligne[ret2[r][1]][d_station+i])) != (byte)-1) {
+                if (crossesLine(ret2[r][0],pgm_read_byte(&(ligne[ret2[r][1]][d_station+i])))) {
                   c0_station_d = d_station + i;
                   compteur2 = i + TempsChangement; // idem
                   break;
@@ -600,8 +602,8 @@ void loop() {
               }
             }
 
-            changement0 = pgm_read_byte(&(ligne[ret[r][1]][c0_station_d]));
-            c0_station_a = rangStation(ret[r][0], changement0);
+            changement0 = pgm_read_byte(&(ligne[ret2[r][1]][c0_station_d]));
+            c0_station_a = rangStation(ret2[r][0], changement0);
             compteur2 += abs(c0_station_a - a_station); // on compte le temps du changement1 à l'arrivée
           }
           temps[r][0] = min(compteur1, compteur2);
@@ -618,34 +620,34 @@ void loop() {
         }
         /* We have the best path. Display it. */
         byte i = 0; // Departure to changement0
-        while (pgm_read_byte(&(ligne[ret[tmp][0]][i])) != temps[tmp][1] && pgm_read_byte(&(ligne[ret[tmp][0]][i])) != departure) {
+        while (pgm_read_byte(&(ligne[ret2[tmp][0]][i])) != temps[tmp][1] && pgm_read_byte(&(ligne[ret2[tmp][0]][i])) != departure) {
           i++;
         }
         do {
-          turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret[tmp][0]][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret[tmp][0]][i]))].led)));
+          turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret2[tmp][0]][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret2[tmp][0]][i]))].led)));
           i++;
-        } while (pgm_read_byte(&(ligne[ret[tmp][0]][i])) != temps[tmp][1] && pgm_read_byte(&(ligne[ret[tmp][0]][i])) != departure); // don't light up change station the first time
-        turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret[tmp][0]][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret[tmp][0]][i]))].led)));
+        } while (pgm_read_byte(&(ligne[ret2[tmp][0]][i])) != temps[tmp][1] && pgm_read_byte(&(ligne[ret2[tmp][0]][i])) != departure); // don't light up change station the first time
+        turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret2[tmp][0]][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret2[tmp][0]][i]))].led)));
 
         i = 0; // changement0 to changement1
-        while (pgm_read_byte(&(ligne[ret[tmp][1]][i])) != temps[tmp][1] && pgm_read_byte(&(ligne[ret[tmp][1]][i])) != temps[tmp][2]) {
+        while (pgm_read_byte(&(ligne[ret2[tmp][1]][i])) != temps[tmp][1] && pgm_read_byte(&(ligne[ret2[tmp][1]][i])) != temps[tmp][2]) {
           i++;
         }
         do {
-          turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret[tmp][1]][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret[tmp][1]][i]))].led)));
+          turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret2[tmp][1]][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret2[tmp][1]][i]))].led)));
           i++;
-        } while (pgm_read_byte(&(ligne[ret[tmp][1]][i])) != temps[tmp][1] && pgm_read_byte(&(ligne[ret[tmp][1]][i])) != temps[tmp][2]);
-        turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret[tmp][1]][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret[tmp][1]][i]))].led)));
+        } while (pgm_read_byte(&(ligne[ret2[tmp][1]][i])) != temps[tmp][1] && pgm_read_byte(&(ligne[ret2[tmp][1]][i])) != temps[tmp][2]);
+        turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret2[tmp][1]][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret2[tmp][1]][i]))].led)));
 
         i = 0; // changement1 to arrival
-        while (pgm_read_byte(&(ligne[ret[tmp][2]][i])) != arrival && pgm_read_byte(&(ligne[ret[tmp][2]][i])) != temps[tmp][2]) {
+        while (pgm_read_byte(&(ligne[ret2[tmp][2]][i])) != arrival && pgm_read_byte(&(ligne[ret2[tmp][2]][i])) != temps[tmp][2]) {
           i++;
         }
         do {
-          turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret[tmp][2]][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret[tmp][2]][i]))].led)));
+          turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret2[tmp][2]][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret2[tmp][2]][i]))].led)));
           i++;
-        } while (pgm_read_byte(&(ligne[ret[tmp][2]][i])) != arrival && pgm_read_byte(&(ligne[ret[tmp][2]][i])) != temps[tmp][2]);
-        turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret[tmp][2]][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret[tmp][2]][i]))].led)));
+        } while (pgm_read_byte(&(ligne[ret2[tmp][2]][i])) != arrival && pgm_read_byte(&(ligne[ret2[tmp][2]][i])) != temps[tmp][2]);
+        turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret2[tmp][2]][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret2[tmp][2]][i]))].led)));
       } else {
         lcd.setCursor(0, 0);
         lcd.print("W: 3chg+ unsupp.");
@@ -655,7 +657,7 @@ void loop() {
       }
     }
   }
-  
+
   lcd.setCursor(0, 0);
   lcd.print("Calcul termine.");
   delay(2000);
