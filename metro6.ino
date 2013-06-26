@@ -441,7 +441,7 @@ void loop() {
           c0_station_a = rangStation(ret[r][1], changement0); // FIXME Concorde - Edgar Quinet
           compteur1 += abs(c0_station_a - a_station);
         }
-		temps[r][1] = changement0;
+        temps[r][1] = changement0;
         /* On compte en sens inverse. Le chemin le plus court est dans l'un des deux trajets. */
         if (ret[r][0] != -1) {
           a_station = rangStation(ret[r][0], departure);
@@ -468,9 +468,9 @@ void loop() {
           compteur2 += abs(c0_station_a - a_station);
         }
         temps[r][0] = min(compteur1, compteur2);
-		if (temps[r][0] == compteur2) {
-			temps[r][1] = changement0;
-		}
+        if (temps[r][0] == compteur2) {
+            temps[r][1] = changement0;
+        }
       }
       byte tmp = 0;
       for (int i=1; i<20; i++) {
