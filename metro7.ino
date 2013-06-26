@@ -329,7 +329,7 @@ void oneChange(char ret[20][2], char d[5], char a[5]) {
   }
 }
 
-char twoChanges(char ret[50][2], char d[5], char a[5]) {
+char twoChanges(char ret[50][3], char d[5], char a[5]) {
   int cpt = 0;
   for (int i=0; i<5; i++) {
     for (int j=0; j<5; j++) {
