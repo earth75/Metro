@@ -205,7 +205,7 @@ void resetI2C() {
   }
 }
 
-void displayLCD(int i, int j, char attribute[6]) {
+void displayLCD(int i, int j, char attribute[7]) {
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Ligne ");
@@ -218,7 +218,7 @@ void displayLCD(int i, int j, char attribute[6]) {
     lcd.print(pgm_read_string(station[pgm_read_byte(&(ligne[i][j]))].nom));
 }
 
-byte getStation(char attribute[6]) {
+byte getStation(char attribute[7]) {
   int i=0, j=0;
   displayLCD(i,j,attribute);
   delay(80);
@@ -274,13 +274,19 @@ byte getStation(char attribute[6]) {
 
 /* ------ */
 
-void findLines(char lines, byte station) {
+void findLines(char lines[5], byte station) {
   byte cpt = 0;
   for (int i=0; i<NombreLignes; i++) {
     for (int j=0; j<NombreStationsParLigne; j++) {
       if (pgm_read_byte(&(ligne[i][j])) == station) {
         lines[cpt] = i;
         cpt++;
+        if (cpt >= 5) {
+            lcd.setCursor(0, 0);
+            lcd.print("W: cpt.ovfl fFL");
+            delay(5000);
+            lcd.clear();
+        }
       }
     }
   }
@@ -502,7 +508,7 @@ void loop() {
       char ret2[50][3] = { {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2} };
       twoChanges(ret2, d_lines, a_lines);
       byte temps[50][3] = {{0, 0, 0}};
-    
+
       if (ret2[0][0] != -2) { // w/a to pass else
         byte d_station;
         byte changement0;
