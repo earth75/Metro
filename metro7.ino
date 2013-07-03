@@ -1,8 +1,4 @@
-/*
- * Copyright © 2013, Adrien Tétar. All Rights Reserved.
- * Licensed under the GNU GPL License, Version 2.
- * available at: http://www.gnu.org/licenses/gpl-2.0.html
- */
+
 #include <avr/pgmspace.h>
 #include <LiquidCrystal.h>
 #include <Wire.h>
