@@ -281,7 +281,7 @@ void findLines(char lines[5], byte station) {
       if (pgm_read_byte(&(ligne[i][j])) == station) {
         lines[cpt] = i;
         cpt++;
-        if (cpt >= 5) {
+        if (cpt > 5) {
             lcd.setCursor(0, 0);
             lcd.print("W: cpt.ovfl fFL");
             delay(5000);
@@ -323,7 +323,7 @@ void oneChange(char ret[20][2], char d[5], char a[5]) {
           ret[cpt][0] = d[i];
           ret[cpt][1] = a[j];
           cpt++;
-          if (cpt >= 20) {
+          if (cpt > 20) {
             lcd.setCursor(0, 0);
             lcd.print("W: cpt.ovfl fOC");
             delay(5000);
@@ -346,7 +346,7 @@ char twoChanges(char ret[50][3], char d[5], char a[5]) {
             ret[cpt][1] = k;
             ret[cpt][2] = a[j];
             cpt++;
-            if (cpt >= 50) {
+            if (cpt > 50) {
               lcd.setCursor(0, 0);
               lcd.print("W: cpt.ovfl fTC");
               delay(5000);
@@ -387,9 +387,13 @@ void setup() {
 void loop() {
   resetI2C(); // previous lighted LEDs may still be ON
   byte departure = getStation("Depart");
+  byte arrival = getStation("Arriv.");
+  /* Break if both stations are the same. */
+  if (departure == arrival) {
+    return;
+  }
   char d_lines[5] = { -1, -1, -1, -1, -1 };
   findLines(d_lines, departure);
-  byte arrival = getStation("Arriv.");
   char a_lines[5] = { -1, -1, -1, -1, -1 };
   findLines(a_lines, arrival);
 
@@ -404,6 +408,7 @@ void loop() {
       turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[buf][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[buf][i]))].led)));
       i++;
     } while (pgm_read_byte(&(ligne[buf][i])) != arrival && pgm_read_byte(&(ligne[buf][i])) != departure);
+	turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[buf][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[buf][i]))].led)));
   } else {
     /* Check if there's one change. */
     char ret[20][2] = { {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1} };
@@ -668,14 +673,6 @@ void loop() {
   lcd.print("Calcul termine.");
   delay(2000);
   while (digitalRead(BoutonValider) != HIGH) {}
-}
-
-char pgm_read_str(const char *data) {
-    char ret;
-    while (pgm_read_byte(data) != '0\') {
-        ret += pgm_read_byte(data++);
-    }
-    return ret;
 }
 
 char* pgm_read_string(const char *s) {
