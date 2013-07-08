@@ -367,7 +367,29 @@ byte rangStation(byte line, byte target) {
   delay(5000);
   lcd.clear();
   exit(-1);
-  return -1; 
+  return -1;
+}
+
+void displayLinePath(char line, byte target1, byte target2) {
+  int cpt = 0;
+  for (int i=0; i<NombreStationsParLigne; i++) {
+/*  if (pgm_read_byte(&(ligne[line][i])) == (byte)-1) {
+      lcd.setCursor(0, 0);
+      lcd.print("W: st.notfnd fDL");
+      delay(5000);
+      lcd.clear();
+      exit(-1);
+    } */
+    if (pgm_read_byte(&(ligne[line][i])) == target1 || pgm_read_byte(&(ligne[line][i])) == target2) {
+      cpt++;
+    }
+    if (cpt > 0) {
+      turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[line][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[line][i]))].led)));
+      if (cpt == 2) {
+        break;
+      }
+    }
+  }
 }
 
 /* --------- */
@@ -395,17 +417,8 @@ void loop() {
   findLines(a_lines, arrival);
 
   /* Check if both stations are on the same line. */
-  char buf = sameLine(d_lines, a_lines);
-  if (buf != -1) {
-    byte i = 0;
-    while ((pgm_read_byte(&(ligne[buf][i])) != arrival) && (pgm_read_byte(&(ligne[buf][i])) != departure)) {
-      i++;
-    }
-    do {
-      turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[buf][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[buf][i]))].led)));
-      i++;
-    } while (pgm_read_byte(&(ligne[buf][i])) != arrival && pgm_read_byte(&(ligne[buf][i])) != departure);
-    turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[buf][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[buf][i]))].led)));
+  if (sameLine(d_lines, a_lines) != -1) {
+    displayLinePath(sameLine(d_lines, a_lines), departure, arrival);
   } else {
     /* Check if there's one change. */
     char ret[OneChangeLimit][2] = { {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1} };
@@ -483,25 +496,8 @@ void loop() {
         }
       }
       /* We have the best path. Display it. */
-      byte i = 0;
-      while (pgm_read_byte(&(ligne[ret[tmp][0]][i])) != temps[tmp][1] && pgm_read_byte(&(ligne[ret[tmp][0]][i])) != departure) {
-        i++;
-      }
-      do {
-        turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret[tmp][0]][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret[tmp][0]][i]))].led)));
-        i++;
-      } while (pgm_read_byte(&(ligne[ret[tmp][0]][i])) != temps[tmp][1] && pgm_read_byte(&(ligne[ret[tmp][0]][i])) != departure); // don't light up change station the first time
-      turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret[tmp][0]][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret[tmp][0]][i]))].led)));
-
-      i = 0;
-      while (pgm_read_byte(&(ligne[ret[tmp][1]][i])) != temps[tmp][1] && pgm_read_byte(&(ligne[ret[tmp][1]][i])) != arrival) {
-        i++;
-      }
-      do {
-        turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret[tmp][1]][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret[tmp][1]][i]))].led)));
-        i++;
-      } while (pgm_read_byte(&(ligne[ret[tmp][1]][i])) != temps[tmp][1] && pgm_read_byte(&(ligne[ret[tmp][1]][i])) != arrival);
-      turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret[tmp][1]][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret[tmp][1]][i]))].led)));
+      displayLinePath(ret[tmp][0], departure, temps[tmp][1]);
+      displayLinePath(ret[tmp][1], temps[tmp][1], arrival);
     } else {
       /* Check if there's two changes. */
       // initialize the array to -2 instead of -1 (avr bootloader interprets lots of -1 in memory as corrupt)
@@ -621,35 +617,9 @@ void loop() {
           }
         }
         /* We have the best path. Display it. */
-        byte i = 0; // Departure to changement0
-        while (pgm_read_byte(&(ligne[ret2[tmp][0]][i])) != temps[tmp][1] && pgm_read_byte(&(ligne[ret2[tmp][0]][i])) != departure) {
-          i++;
-        }
-        do {
-          turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret2[tmp][0]][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret2[tmp][0]][i]))].led)));
-          i++;
-        } while (pgm_read_byte(&(ligne[ret2[tmp][0]][i])) != temps[tmp][1] && pgm_read_byte(&(ligne[ret2[tmp][0]][i])) != departure); // don't light up change station the first time
-        turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret2[tmp][0]][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret2[tmp][0]][i]))].led)));
-
-        i = 0; // changement0 to changement1
-        while (pgm_read_byte(&(ligne[ret2[tmp][1]][i])) != temps[tmp][1] && pgm_read_byte(&(ligne[ret2[tmp][1]][i])) != temps[tmp][2]) {
-          i++;
-        }
-        do {
-          turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret2[tmp][1]][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret2[tmp][1]][i]))].led)));
-          i++;
-        } while (pgm_read_byte(&(ligne[ret2[tmp][1]][i])) != temps[tmp][1] && pgm_read_byte(&(ligne[ret2[tmp][1]][i])) != temps[tmp][2]);
-        turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret2[tmp][1]][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret2[tmp][1]][i]))].led)));
-
-        i = 0; // changement1 to arrival
-        while (pgm_read_byte(&(ligne[ret2[tmp][2]][i])) != arrival && pgm_read_byte(&(ligne[ret2[tmp][2]][i])) != temps[tmp][2]) {
-          i++;
-        }
-        do {
-          turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret2[tmp][2]][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret2[tmp][2]][i]))].led)));
-          i++;
-        } while (pgm_read_byte(&(ligne[ret2[tmp][2]][i])) != arrival && pgm_read_byte(&(ligne[ret2[tmp][2]][i])) != temps[tmp][2]);
-        turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret2[tmp][2]][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[ret2[tmp][2]][i]))].led)));
+        displayLinePath(ret2[tmp][0], departure, temps[tmp][1]);     // Departure   to changement0
+        displayLinePath(ret2[tmp][1], temps[tmp][1], temps[tmp][2]); // changement0 to changement1
+        displayLinePath(ret2[tmp][2], temps[tmp][2], arrival);       // changement1 to arrival
       } else {
         lcd.setCursor(0, 0);
         lcd.print("W: 3chg+ unsupp.");
