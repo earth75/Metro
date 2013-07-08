@@ -10,7 +10,7 @@
 #define NombreStations          86
 #define NombreLignes            14
 #define NombreStationsParLigne  15
-#define LongueurNomStation      16
+#define LongueurNomStation      16 // 16x2 LCD screen
 
 #define BoutonLigne              7
 #define BoutonGauche             6
@@ -19,10 +19,13 @@
 
 #define TempsChangement          3
 
+#define OneChangeLimit          20
+#define TwoChangesLimit         50
+
 typedef struct {
   char nom[LongueurNomStation+1]; // wanted number +1 for '\0' terminaison
-  unsigned char i2c;
-  unsigned char led; // note: 0 = on, 1 = off
+  byte i2c;
+  byte led; // note: 0 = on, 1 = off
 } Tstation;
 
 const Tstation station[NombreStations] PROGMEM = {
@@ -154,12 +157,12 @@ LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 
 void shutdownI2C(int i, int j) {
   Wire.beginTransmission(pgm_read_byte(&(station[pgm_read_byte(&(ligne[i][j]))].i2c)));
-  Wire.write(B11111111);
+  Wire.write(0b11111111);
   Wire.endTransmission();
 }
 
-byte readI2C(byte addr) {
-  Wire.requestFrom((int)addr, 1);
+byte readI2C(byte i2c_addr) {
+  Wire.requestFrom((int)i2c_addr, 1);
   return Wire.read();
 }
 
@@ -188,20 +191,16 @@ void turnOnLED(byte i2c_addr, byte led_addr) {
 void resetI2C() {
   // FIXME: I2C identifiers are inverted
   // PCF8574P
-  byte id = 0b0100000;
-  while (id <= 0b0100111) { // FIXME: 0b0100110
+  for (byte id=0b0100000; id<=0b0100111; id++) { // FIXME: 0b0100110
     Wire.beginTransmission(id);
-    Wire.write(B11111111);
+    Wire.write(0b11111111);
     Wire.endTransmission();
-    id++;
   }
   //PCF8574AP
-  id = 0b0111000;
-  while (id <= 0b0111111) { // FIXME: 0b0111110
+  for (byte id=0b0111000; id<=0b0111111; id++) { // FIXME: 0b0111110
     Wire.beginTransmission(id);
-    Wire.write(B11111111);
+    Wire.write(0b11111111);
     Wire.endTransmission();
-    id++;
   }
 }
 
@@ -210,7 +209,7 @@ void displayLCD(int i, int j, char attribute[7]) {
     lcd.setCursor(0, 0);
     lcd.print("Ligne ");
     lcd.print(i+1);
-    lcd.setCursor(8, 0); // Keep same indent no matter if the line number has 1/2 number(s)
+    lcd.setCursor(8, 0); // Keep same indent regardless of the line number
     lcd.print("(");
     lcd.print(attribute);
     lcd.print(")");
@@ -229,10 +228,10 @@ byte getStation(char attribute[7]) {
     // delay avoids sending same instruction multiple times when you click on a button
     if (digitalRead(BoutonLigne) == HIGH) {
       shutdownI2C(i,j);
-      if (pgm_read_byte(&(ligne[i+1][0])) == (byte)-1) {
+      if (pgm_read_byte(&(ligne[i+1][0])) == (byte)-1) { // line 2 guard
         i++;
       }
-      if ((i+1) < NombreLignes) { // check if we're within ArrayBounds
+      if ((i+1) < NombreLignes) { // array bound check
         i++;
         j = 0; // reset station count
       } else {
@@ -241,8 +240,7 @@ byte getStation(char attribute[7]) {
       }
       displayLCD(i,j,attribute);
       delay(80);
-    }
-    else if (digitalRead(BoutonGauche) == HIGH) {
+    } else if (digitalRead(BoutonGauche) == HIGH) {
       shutdownI2C(i,j);
       if ((j-1) >= 0) {
         j--;
@@ -254,8 +252,7 @@ byte getStation(char attribute[7]) {
       }
       displayLCD(i,j,attribute);
       delay(80);
-    }
-    else if (digitalRead(BoutonDroite) == HIGH) {
+    } else if (digitalRead(BoutonDroite) == HIGH) {
       shutdownI2C(i,j);
       if ((j+1) < NombreStationsParLigne && pgm_read_byte(&(ligne[i][j+1])) != (byte)-1) { // TODO: second check valid if out of bound?
         j++;
@@ -335,7 +332,7 @@ void oneChange(char ret[20][2], char d[5], char a[5]) {
   }
 }
 
-char twoChanges(char ret[50][3], char d[5], char a[5]) {
+void twoChanges(char ret[50][3], char d[5], char a[5]) {
   int cpt = 0;
   for (int i=0; i<5; i++) {
     for (int j=0; j<5; j++) {
@@ -411,19 +408,17 @@ void loop() {
 	turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[buf][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[buf][i]))].led)));
   } else {
     /* Check if there's one change. */
-    char ret[20][2] = { {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1} };
+    char ret[OneChangeLimit][2] = { {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1} };
     oneChange(ret, d_lines, a_lines);
 
     if (ret[0][0] != -1) { // w/a to pass else
       byte d_station;
-      byte changement0;
-      byte c0_station_d;
-      byte c0_station_a;
+      byte changement0, c0_station_d, c0_station_a;
       byte a_station;
-      byte compteur1 = 0, compteur2 = 0;
-      byte temps[20][2] = {{0, 0}}; // TODO: check if this function is correctly initialized
+      byte compteur1=0, compteur2=0;
+      byte temps[OneChangeLimit][2] = {{0, 0}}; // TODO: check if this function is correctly initialized
 
-      for (int r=0; r<20; r++) {
+      for (int r=0; r<OneChangeLimit; r++) {
         /* On compte en partant du départ et en allant à l'arrivée. */
         if (ret[r][0] != -1) {
           d_station = rangStation(ret[r][0], departure); // D. to
@@ -482,7 +477,7 @@ void loop() {
       }
       /* Find best path between all possibilities. */
       byte tmp = 0;
-      for (int i=1; i<20; i++) {
+      for (int i=1; i<OneChangeLimit; i++) {
         if (temps[i][0] < temps[tmp][0] && temps[i][0] > 0) {
           tmp = i;
         }
@@ -510,21 +505,17 @@ void loop() {
     } else {
       /* Check if there's two changes. */
       // initialize the array to -2 instead of -1 (avr bootloader interprets lots of -1 in memory as corrupt)
-      char ret2[50][3] = { {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2} };
+      char ret2[TwoChangesLimit][3] = { {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2}, {-2,-2,-2} };
       twoChanges(ret2, d_lines, a_lines);
-      byte temps[50][3] = {{0, 0, 0}};
+      byte temps[TwoChangesLimit][3] = {{0, 0, 0}};
 
       if (ret2[0][0] != -2) { // w/a to pass else
         byte d_station;
-        byte changement0;
-        byte c0_station_d;
-        byte c0_station_a;
-        byte changement1;
-        byte c1_station_d;
-        byte c1_station_a;
+        byte changement0, c0_station_d, c0_station_a;
+        byte changement1, c1_station_d, c1_station_a;
         byte a_station;
-        byte compteur1 = 0, compteur2 = 0, compteur3 = 0;
-        for (int r=0; r<50; r++) {
+        byte compteur1=0, compteur2=0;
+        for (int r=0; r<TwoChangesLimit; r++) {
           /* On compte en partant du départ et en allant à l'arrivée en passant par la ligne intermédiaire. */
           if (ret2[r][0] != -2) {
             d_station = rangStation(ret2[r][0], departure); // D. to
@@ -624,7 +615,7 @@ void loop() {
           }
         }
         byte tmp = 0;
-        for (int i=1; i<50; i++) {
+        for (int i=1; i<TwoChangesLimit; i++) {
           if (temps[i][0] < temps[tmp][0] && temps[i][0] > 0) {
             tmp = i;
           }
@@ -673,6 +664,7 @@ void loop() {
   lcd.print("Calcul termine.");
   delay(2000);
   while (digitalRead(BoutonValider) != HIGH) {}
+  lcd.clear();
 }
 
 char* pgm_read_string(const char *s) {
