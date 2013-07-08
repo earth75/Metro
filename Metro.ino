@@ -622,10 +622,10 @@ void loop() {
         displayLinePath(ret2[tmp][2], temps[tmp][2], arrival);       // changement1 to arrival
       } else {
         lcd.setCursor(0, 0);
-        lcd.print("W: 3chg+ unsupp.");
+        lcd.print("3changes+ unsup.");
         delay(5000);
         lcd.clear();
-        exit(-1);
+        return;
       }
     }
   }
