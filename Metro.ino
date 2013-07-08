@@ -405,7 +405,7 @@ void loop() {
       turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[buf][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[buf][i]))].led)));
       i++;
     } while (pgm_read_byte(&(ligne[buf][i])) != arrival && pgm_read_byte(&(ligne[buf][i])) != departure);
-	turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[buf][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[buf][i]))].led)));
+    turnOnLED(pgm_read_byte(&(station[pgm_read_byte(&(ligne[buf][i]))].i2c)), pgm_read_byte(&(station[pgm_read_byte(&(ligne[buf][i]))].led)));
   } else {
     /* Check if there's one change. */
     char ret[OneChangeLimit][2] = { {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1}, {-1,-1} };
